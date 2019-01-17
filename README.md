@@ -1,5 +1,5 @@
-# dhcp-packets-analyser
-Tool to analyse DHCP packets on a network device
+# DHCP packets analyzer
+Tool to analyze DHCP packets on a network device.
 
 ## Build
 
