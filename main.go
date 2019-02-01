@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"github.com/google/gopacket"
@@ -8,6 +9,7 @@ import (
 	"github.com/google/gopacket/pcap"
 	"github.com/opentracing/opentracing-go"
 	zipkin "github.com/openzipkin-contrib/zipkin-go-opentracing"
+	"net"
 	"strings"
 )
 
@@ -117,7 +119,7 @@ func pushToZipkin(tracer *opentracing.Tracer, packet layers.DHCPv4) {
 	span.SetTag("NextServerIP", packet.NextServerIP.String());
 	span.SetTag("RelayAgentIP", packet.RelayAgentIP.String())
 	for _, option := range packet.Options {
-		span.SetTag(option.Type.String(), option.String())
+		span.SetTag(option.Type.String(), getOptionDataInfo(option))
 	}
 
 	span.Finish()
@@ -137,17 +139,15 @@ func getMessageTypePacket(packet layers.DHCPv4) string {
 }
 
 func initZipkin(endpoint string) *opentracing.Tracer {
-	
+
 	collector, err := zipkin.NewHTTPCollector(endpoint)
 	if err != nil {
 		panic(fmt.Sprintf("unable to create Zipkin HTTP collector: %+v\n", err))
 
 	}
 
-	// Create our recorder.
 	recorder := zipkin.NewRecorder(collector, true, "0.0.0.0:0", "dhcp-packet-analyzer")
 
-	// Create our tracer.
 	tracer, err := zipkin.NewTracer(
 		recorder,
 		zipkin.ClientServerSameSpan(true),
@@ -164,28 +164,119 @@ func getDHCPPacketInfo(packet layers.DHCPv4) string {
 	info := fmt.Sprintln(packet.Operation.String(), "from", packet.ClientIP.String(), "/", packet.ClientHWAddr.String())
 
 	for _, option := range packet.Options {
-		info += fmt.Sprintf("%2s%s\n", "", option.String())
+		info += fmt.Sprintf("%2s%s\n", "", getOptionInfo(option))
 	}
 
 	clientIP := packet.YourClientIP.String()
 
 	if clientIP != "0.0.0.0" {
-		info += fmt.Sprintf("%2s%s(%s)\n", "", "YourClientIP", clientIP)
+		info += fmt.Sprintf("%2s%-15s : %s\n", "", "YourClientIP", clientIP)
 	}
 
 	nextServerIP := packet.NextServerIP.String()
 
 	if nextServerIP != "0.0.0.0" {
-		info += fmt.Sprintf("%2s%s(%s)\n", "", "NextServerIP", nextServerIP)
+		info += fmt.Sprintf("%2s%-15s : %s\n", "", "NextServerIP", nextServerIP)
 	}
 
 	relayAgentIP := packet.RelayAgentIP.String()
 
 	if relayAgentIP != "0.0.0.0" {
-		info += fmt.Sprintf("%2s%s(%s)\n", "", "RelayAgentIP", relayAgentIP)
+		info += fmt.Sprintf("%2s%-15s : %s\n", "", "RelayAgentIP", relayAgentIP)
 	}
 
-	info += fmt.Sprintf("%2s%s(%v)\n", "", "Xid", packet.Xid)
+	info += fmt.Sprintf("%2s%-15s : %v\n", "", "Xid", packet.Xid)
 
 	return info
+}
+
+func getOptionInfo(o layers.DHCPOption) string {
+	format := "%-15s : %v"
+	format2 := "%-15s : "
+
+	switch o.Type {
+
+	case layers.DHCPOptHostname, layers.DHCPOptMeritDumpFile, layers.DHCPOptDomainName, layers.DHCPOptRootPath,
+		layers.DHCPOptExtensionsPath, layers.DHCPOptNISDomain, layers.DHCPOptNetBIOSTCPScope, layers.DHCPOptXFontServer,
+		layers.DHCPOptXDisplayManager, layers.DHCPOptMessage, layers.DHCPOptDomainSearch: // string
+		return fmt.Sprintf(format, o.Type, string(o.Data))
+
+	case layers.DHCPOptMessageType:
+		if len(o.Data) != 1 {
+			return fmt.Sprintf(format, o.Type, "INVALID")
+		}
+		return fmt.Sprintf(format, o.Type, layers.DHCPMsgType(o.Data[0]))
+
+	case layers.DHCPOptSubnetMask, layers.DHCPOptServerID, layers.DHCPOptBroadcastAddr,
+		layers.DHCPOptSolicitAddr, layers.DHCPOptRequestIP: // net.IP
+		if len(o.Data) < 4 {
+			return fmt.Sprintf(format, o.Type, "INVALID")
+		}
+		return fmt.Sprintf(format, o.Type, net.IP(o.Data))
+
+	case layers.DHCPOptT1, layers.DHCPOptT2, layers.DHCPOptLeaseTime, layers.DHCPOptPathMTUAgingTimeout,
+		layers.DHCPOptARPTimeout, layers.DHCPOptTCPKeepAliveInt: // uint32
+		if len(o.Data) != 4 {
+			return fmt.Sprintf(format, o.Type, "INVALID")
+		}
+		return fmt.Sprintf(format, o.Type,
+			uint32(o.Data[0])<<24|uint32(o.Data[1])<<16|uint32(o.Data[2])<<8|uint32(o.Data[3]))
+
+	case layers.DHCPOptParamsRequest:
+		buf := &bytes.Buffer{}
+		buf.WriteString(fmt.Sprintf(format2, o.Type))
+		for i, v := range o.Data {
+			buf.WriteString(layers.DHCPOpt(v).String())
+			if i+1 != len(o.Data) {
+				buf.WriteByte(',')
+			}
+		}
+		return buf.String()
+
+	default:
+		return fmt.Sprintf(format, o.Type, o.Data)
+	}
+}
+
+func getOptionDataInfo(o layers.DHCPOption) string {
+	switch o.Type {
+
+	case layers.DHCPOptHostname, layers.DHCPOptMeritDumpFile, layers.DHCPOptDomainName, layers.DHCPOptRootPath,
+		layers.DHCPOptExtensionsPath, layers.DHCPOptNISDomain, layers.DHCPOptNetBIOSTCPScope, layers.DHCPOptXFontServer,
+		layers.DHCPOptXDisplayManager, layers.DHCPOptMessage, layers.DHCPOptDomainSearch: // string
+		return string(o.Data)
+
+	case layers.DHCPOptMessageType:
+		if len(o.Data) != 1 {
+			return "INVALID"
+		}
+		return layers.DHCPMsgType(o.Data[0]).String()
+
+	case layers.DHCPOptSubnetMask, layers.DHCPOptServerID, layers.DHCPOptBroadcastAddr,
+		layers.DHCPOptSolicitAddr, layers.DHCPOptRequestIP: // net.IP
+		if len(o.Data) < 4 {
+			return "INVALID"
+		}
+		return net.IP(o.Data).String()
+
+	case layers.DHCPOptT1, layers.DHCPOptT2, layers.DHCPOptLeaseTime, layers.DHCPOptPathMTUAgingTimeout,
+		layers.DHCPOptARPTimeout, layers.DHCPOptTCPKeepAliveInt: // uint32
+		if len(o.Data) != 4 {
+			return "INVALID"
+		}
+		return fmt.Sprint(uint32(o.Data[0])<<24 | uint32(o.Data[1])<<16 | uint32(o.Data[2])<<8 | uint32(o.Data[3]))
+
+	case layers.DHCPOptParamsRequest:
+		buf := &bytes.Buffer{}
+		for i, v := range o.Data {
+			buf.WriteString(layers.DHCPOpt(v).String())
+			if i+1 != len(o.Data) {
+				buf.WriteByte(',')
+			}
+		}
+		return buf.String()
+
+	default:
+		return fmt.Sprintf("%v", o.Data)
+	}
 }
