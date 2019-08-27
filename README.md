@@ -1,4 +1,4 @@
-# dhcp-packets-analyser
+# DHCP packets analyzer
 Tool to analyse [DHCP](https://en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol) packets on a network device.
 The DHCP packets could be print on standard ouput or/and push to [Zipkin](https://zipkin.io/), a distributed tracing system.
 
