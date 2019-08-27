@@ -1,6 +1,6 @@
 # DHCP packets analyzer
 Tool to analyse [DHCP](https://en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol) packets on a network device.
-The DHCP packets could be print on standard ouput or/and push to [Zipkin](https://zipkin.io/), a distributed tracing system.
+The DHCP packets could be printed on standard ouput or/and push to [Zipkin](https://zipkin.io/), a distributed tracing system.
 
 The interaction with Zipkin is realized through the [OpenTracing APIs](https://opentracing.io/).
 
@@ -8,7 +8,7 @@ The interaction with Zipkin is realized through the [OpenTracing APIs](https://o
 
 Prerequisites
 - go 1.11
-- pcap library installed on the os
+- [pcap](https://fr.wikipedia.org/wiki/Pcap) library installed on the os (package libpcap-dev for linux, [npcap](https://nmap.org/npcap/) for windows)
 
 ```sh
 go get github.com/google/gopacket
@@ -17,8 +17,9 @@ go build
 
 ## Usage
 
-List all devices.
 You should have the root privileges to run the program.
+
+List all devices.
 
 ```
 ./dhcp-packets-analyzer
@@ -41,7 +42,6 @@ Type -h for usage help.
 ```
 
 Analyze the packets DHCP on a device.
-You must the root privileges to execute this command.
 
 ```
 ./dhcp-packets-analyzer -device enp3s0 -print
@@ -85,4 +85,29 @@ Usage of ./dhcp-packets-analyzer:
   -zipkinEndpoint string
     	Endpoint of zipkin server. Default : http://127.0.0.1:9411/api/v1/spans (default "http://127.0.0.1:9411/api/v1/spans")
 ```
+
+Analyze the packets DHCP on a device and push the result into Zipkin.
+
+./dhcp-packets-analyzer -device enp3s0 -zipkin
+
+```
+Analyze DHCP packets on device enp3s0
+```
+
+By default, the endpoint of Zipkin is http://127.0.0.1:9411/api/v1/spans but it can be changed with the parameter -zipkinEndpoint.
+
+./dhcp-packets-analyzer -device enp3s0 -zipkin -zipkinEndpoint http://zipkin:9411/api/v1/spans
+
+```
+Analyze DHCP packets on device enp3s0
+```
+
+In zipkin, the information of DHCP packets will be present with the following form :
+
+- Service Name : dhcp-packet-analyzer (always)
+- Span Name : the DHCP message type (Discovery, Offer, Request, Acknowledge, Inform, Release)
+
+
+
+
 
