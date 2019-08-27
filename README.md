@@ -1,5 +1,8 @@
 # dhcp-packets-analyser
-Tool to analyse DHCP packets on a network device
+Tool to analyse [DHCP](https://en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol) packets on a network device.
+The DHCP packets could be print on standard ouput or/and push to [Zipkin](https://zipkin.io/), a distributed tracing system.
+
+The interaction with Zipkin is realized through the [OpenTracing APIs](https://opentracing.io/).
 
 ## Build
 
@@ -8,12 +11,14 @@ Prerequisites
 - pcap library installed on the os
 
 ```sh
+go get github.com/google/gopacket
 go build
 ```
 
 ## Usage
 
-List all devices
+List all devices.
+You should have the root privileges to run the program.
 
 ```
 ./dhcp-packets-analyzer
@@ -39,7 +44,7 @@ Analyze the packets DHCP on a device.
 You must the root privileges to execute this command.
 
 ```
-./dhcp-packets-analyzer -device enp3s0
+./dhcp-packets-analyzer -device enp3s0 -print
 Analyze DHCP packets on device enp3s0
 Request from 0.0.0.0 / 2c:27:d7:22:4a:88
   Option(MessageType:Request)
@@ -73,4 +78,11 @@ Show help
 Usage of ./dhcp-packets-analyzer:
   -device string
     	device name
+  -print
+    	Print the analysed DHCP packet to the standard output (default true)
+  -zipkin
+    	Push the analysed DHCP packet to a zipkin server
+  -zipkinEndpoint string
+    	Endpoint of zipkin server. Default : http://127.0.0.1:9411/api/v1/spans (default "http://127.0.0.1:9411/api/v1/spans")
 ```
+
