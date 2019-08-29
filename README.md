@@ -106,8 +106,11 @@ In zipkin, the information of DHCP packets will be present with the following fo
 
 - Service Name : dhcp-packet-analyzer (always)
 - Span Name : the DHCP message type (Discovery, Offer, Request, Acknowledge, Inform, Release)
+- Tags : Xid, Operation, ClientIP, ClientMAC, YourClientIP, NextServerIP, RelayAgentIP, all DHCP options
 
+Each span are grouped by Xid field which represents a DHCP "transaction".
 
+The next screenshot shows a DHCP "transaction" in Zipkin
 
 
 
