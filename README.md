@@ -114,3 +114,31 @@ Each span are grouped by Xid field which represents a DHCP "transaction".
 
 ![](/images/zipkin-2.png)
 
+## How to test with Zipkin
+
+The following instructions show steps by steps how to visualise the resultat to a local zipkin launched with [Docker](https://hub.docker.com/).
+
+Launch Zipkin with docker.
+
+```sh
+~ % docker run --name zipkin -d -p 9411:9411 openzipkin/zipkin
+```
+
+Zipkin is avaiblable in [http://localhost:9411/zipkin/](http://localhost:9411/zipkin/).
+
+Launch the DHCP packets analyzer.
+
+```sh
+~ % sudo ./dhcp-packets-analyzer -device enp3s0 -zipkin
+Analyze DHCP packets on device enp3s0
+```
+
+At this time, all DHCP packets will be visualized in the web interface of Zipkin.
+
+To check that, for example, release the current lease of the local machine.
+
+```sh
+~ % sudo dhclient -r; sudo dhclient                    
+Killed old client process
+```
+
