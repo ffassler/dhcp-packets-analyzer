@@ -151,6 +151,7 @@ Click on the parent span and all operations of the release operation are viewabl
 ![](/images/zipkin-4.png)
 
 Finally, it is possible to show the details of each operation.
-For example, we can see the detais of the offer of the DHCP server of the discover request.
+
+For example, we can see the details of the offer of the DHCP server.
 
 ![](/images/zipkin-5.png)
