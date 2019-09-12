@@ -142,3 +142,15 @@ To check that, for example, release the current lease of the local machine.
 Killed old client process
 ```
 
+Then, the release operation is present in the web interface of Zipkin in a parent span.
+
+![](/images/zipkin-3.png)
+
+Click on the parent span and all operations of the release operation are viewable.
+
+![](/images/zipkin-4.png)
+
+Finally, it is possible to show the details of each operation.
+For example, we can see the detais of the offer of the DHCP server of the discover request.
+
+![](/images/zipkin-5.png)
