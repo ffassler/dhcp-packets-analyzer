@@ -8,7 +8,9 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/opentracing/opentracing-go"
-	zipkin "github.com/openzipkin-contrib/zipkin-go-opentracing"
+	"github.com/openzipkin/zipkin-go"
+	zipkinot "github.com/openzipkin-contrib/zipkin-go-opentracing"
+	zipkinhttp "github.com/openzipkin/zipkin-go/reporter/http"
 	"net"
 	"strings"
 )
@@ -21,7 +23,7 @@ func main() {
 	deviceName := flag.String("device", "", "device name")
 	printFlag := flag.Bool("print", true, "Print the analysed DHCP packet to the standard output")
 	zipkinFlag := flag.Bool("zipkin", false, "Push the analysed DHCP packet to a zipkin server")
-	zipkinEndpoint := flag.String("zipkinEndpoint", "http://127.0.0.1:9411/api/v1/spans", "Endpoint of zipkin server. Default : http://127.0.0.1:9411/api/v1/spans")
+	zipkinEndpoint := flag.String("zipkinEndpoint", "http://127.0.0.1:9411/api/v2/spans", "Endpoint of zipkin server. Default : http://127.0.0.1:9411/api/v2/spans")
 
 	flag.Parse()
 
@@ -138,24 +140,32 @@ func getMessageTypePacket(packet layers.DHCPv4) string {
 	return ""
 }
 
-func initZipkin(endpoint string) *opentracing.Tracer {
-
-	collector, err := zipkin.NewHTTPCollector(endpoint)
+func initZipkin(url string) *opentracing.Tracer {
+	// set up a span reporter
+	reporter := zipkinhttp.NewReporter(url)
+	defer reporter.Close()
+  
+	// create our local service endpoint
+	endpoint, err := zipkin.NewEndpoint("dhcp-packet-analyzer", "0.0.0.0:0")
 	if err != nil {
-		panic(fmt.Sprintf("unable to create Zipkin HTTP collector: %+v\n", err))
-
+		fmt.Println("unable to create local endpoint: %+v\n", err)
 	}
 
-	recorder := zipkin.NewRecorder(collector, true, "0.0.0.0:0", "dhcp-packet-analyzer")
-
-	tracer, err := zipkin.NewTracer(
-		recorder,
-		zipkin.ClientServerSameSpan(true),
-		zipkin.TraceID128Bit(true),
-	)
+	// initialize our tracer
+	nativeTracer, err := zipkin.NewTracer(reporter, zipkin.WithLocalEndpoint(endpoint), zipkin.WithSharedSpans(true), zipkin.WithTraceID128Bit(true))
 	if err != nil {
-		panic(fmt.Sprintf("unable to create Zipkin tracer: %+v\n", err))
+		fmt.Println("unable to create tracer: %+v\n", err)
 	}
+
+	// use zipkin-go-opentracing to wrap our tracer
+	tracer := zipkinot.Wrap(nativeTracer)
+
+
+	//tracer, err := zipkin.NewTracer(
+	//	recorder,
+	//	zipkin.ClientServerSameSpan(true),
+	//	zipkin.TraceID128Bit(true),
+	//)
 
 	return &tracer
 }
