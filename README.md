@@ -148,10 +148,10 @@ Then, the release operation is present in the web interface of Zipkin in a paren
 
 Click on the parent span and all operations of the release operation are viewable.
 
-![](/images/zipkin-4.png)
+![](/images/zipkin-2.png)
 
 Finally, it is possible to show the details of each operation.
 
 For example, we can see the details of the offer of the DHCP server.
 
-![](/images/zipkin-5.png)
+![](/images/zipkin-4.png)
