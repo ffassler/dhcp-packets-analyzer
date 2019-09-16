@@ -8,8 +8,8 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/opentracing/opentracing-go"
-	"github.com/openzipkin/zipkin-go"
 	zipkinot "github.com/openzipkin-contrib/zipkin-go-opentracing"
+	"github.com/openzipkin/zipkin-go"
 	zipkinhttp "github.com/openzipkin/zipkin-go/reporter/http"
 	"net"
 	"strings"
@@ -118,7 +118,7 @@ func pushToZipkin(tracer *opentracing.Tracer, packet layers.DHCPv4) {
 	span.SetTag("ClientIP", packet.ClientIP.String())
 	span.SetTag("ClientMAC", packet.ClientHWAddr.String())
 	span.SetTag("YourClientIP", packet.YourClientIP.String())
-	span.SetTag("NextServerIP", packet.NextServerIP.String());
+	span.SetTag("NextServerIP", packet.NextServerIP.String())
 	span.SetTag("RelayAgentIP", packet.RelayAgentIP.String())
 	for _, option := range packet.Options {
 		span.SetTag(option.Type.String(), getOptionDataInfo(option))
@@ -141,31 +141,19 @@ func getMessageTypePacket(packet layers.DHCPv4) string {
 }
 
 func initZipkin(url string) *opentracing.Tracer {
-	// set up a span reporter
 	reporter := zipkinhttp.NewReporter(url)
-	defer reporter.Close()
-  
-	// create our local service endpoint
+
 	endpoint, err := zipkin.NewEndpoint("dhcp-packet-analyzer", "0.0.0.0:0")
 	if err != nil {
 		fmt.Println("unable to create local endpoint: %+v\n", err)
 	}
 
-	// initialize our tracer
 	nativeTracer, err := zipkin.NewTracer(reporter, zipkin.WithLocalEndpoint(endpoint), zipkin.WithSharedSpans(true), zipkin.WithTraceID128Bit(true))
 	if err != nil {
 		fmt.Println("unable to create tracer: %+v\n", err)
 	}
 
-	// use zipkin-go-opentracing to wrap our tracer
 	tracer := zipkinot.Wrap(nativeTracer)
-
-
-	//tracer, err := zipkin.NewTracer(
-	//	recorder,
-	//	zipkin.ClientServerSameSpan(true),
-	//	zipkin.TraceID128Bit(true),
-	//)
 
 	return &tracer
 }

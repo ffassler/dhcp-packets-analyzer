@@ -83,7 +83,7 @@ Usage of ./dhcp-packets-analyzer:
   -zipkin
     	Push the analysed DHCP packet to a zipkin server
   -zipkinEndpoint string
-    	Endpoint of zipkin server. Default : http://127.0.0.1:9411/api/v1/spans (default "http://127.0.0.1:9411/api/v1/spans")
+    	Endpoint of zipkin server. Default : http://127.0.0.1:9411/api/v2/spans (default "http://127.0.0.1:9411/api/v2/spans")
 ```
 
 Analyze the packets DHCP on a device and push the result into Zipkin.
@@ -94,9 +94,9 @@ Analyze the packets DHCP on a device and push the result into Zipkin.
 Analyze DHCP packets on device enp3s0
 ```
 
-By default, the endpoint of Zipkin is http://127.0.0.1:9411/api/v1/spans but it can be changed with the parameter -zipkinEndpoint.
+By default, the endpoint of Zipkin is http://127.0.0.1:9411/api/v2/spans but it can be changed with the parameter -zipkinEndpoint.
 
-./dhcp-packets-analyzer -device enp3s0 -zipkin -zipkinEndpoint http://zipkin:9411/api/v1/spans
+./dhcp-packets-analyzer -device enp3s0 -zipkin -zipkinEndpoint http://zipkin:9411/api/v2/spans
 
 ```
 Analyze DHCP packets on device enp3s0
