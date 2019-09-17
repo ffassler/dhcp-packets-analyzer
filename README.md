@@ -7,11 +7,10 @@ The interaction with Zipkin is realized through the [OpenTracing APIs](https://o
 ## Build
 
 Prerequisites
-- go 1.11
+- go 1.13
 - [pcap](https://fr.wikipedia.org/wiki/Pcap) library installed on the os (package libpcap-dev for linux, [npcap](https://nmap.org/npcap/) for windows)
 
 ```sh
-go get github.com/google/gopacket
 go build
 ```
 
