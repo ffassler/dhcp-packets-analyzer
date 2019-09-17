@@ -1,7 +1,5 @@
 module github.com/ffassler/dhcp-packets-analyser
 
-go 1.12
-
 require (
 	github.com/google/gopacket v1.1.17
 	github.com/opentracing/opentracing-go v1.1.0
