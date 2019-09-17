@@ -68,7 +68,10 @@ func readDHCP(handle *pcap.Handle, printFlag bool, zipkinFlag bool, endpoint str
 	in := src.Packets()
 	var tracer *opentracing.Tracer
 	if zipkinFlag {
-		tracer = initZipkin(endpoint)
+		var err error = nil
+		if tracer, err = initZipkin(endpoint); err != nil {
+			stop <- struct{}{}
+		}
 	}
 	for {
 		var packet gopacket.Packet
@@ -140,22 +143,24 @@ func getMessageTypePacket(packet layers.DHCPv4) string {
 	return ""
 }
 
-func initZipkin(url string) *opentracing.Tracer {
+func initZipkin(url string) (*opentracing.Tracer, error) {
 	reporter := zipkinhttp.NewReporter(url)
 
 	endpoint, err := zipkin.NewEndpoint("dhcp-packet-analyzer", "0.0.0.0:0")
 	if err != nil {
-		fmt.Println("unable to create local endpoint: %+v\n", err)
+		fmt.Println("Unable to create local zipkin endpoint:", err)
+		return nil, err
 	}
 
 	nativeTracer, err := zipkin.NewTracer(reporter, zipkin.WithLocalEndpoint(endpoint), zipkin.WithSharedSpans(true), zipkin.WithTraceID128Bit(true))
 	if err != nil {
-		fmt.Println("unable to create tracer: %+v\n", err)
+		fmt.Println("Unable to create tracer:", err)
+		return nil, err
 	}
 
 	tracer := zipkinot.Wrap(nativeTracer)
 
-	return &tracer
+	return &tracer, err
 }
 
 func getDHCPPacketInfo(packet layers.DHCPv4) string {
